@@ -47,7 +47,7 @@ func NewHandler(
 	tracking func(context.Context, string, []string) (json.RawMessage, error),
 ) http.Handler {
 	server := protocol.NewServer(&protocol.Implementation{
-		Name: "ontology-engine", Title: "游戏 BI 业务本体知识引擎", Version: "1.0.0",
+		Name: "ontology-engine", Title: "知域 · Domain Grove", Version: "1.0.0",
 	}, nil)
 	protocol.AddTool(server, tool("get_ontology_skeleton", "List node IDs, aliases and relationship directions without loading business axioms.", false),
 		func(_ context.Context, _ *protocol.CallToolRequest, args skeletonArgs) (*protocol.CallToolResult, ontology.Skeleton, error) {

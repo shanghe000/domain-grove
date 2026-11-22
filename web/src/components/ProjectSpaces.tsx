@@ -36,7 +36,7 @@ export function ProjectSpaces({ spaces, current, canCreate, ownSubject, onSelect
   const [dialog, setDialog] = useState<'create' | 'manage'>()
   return <div className="idx-projects">
     <label className="idx-project-select">
-      <span>游戏项目空间</span>
+      <span>知识空间</span>
       <select value={current.id} onChange={event => onSelect(event.target.value)}>
         {spaces.map(space => <option key={space.id} value={space.id}>{space.name}</option>)}
       </select>
@@ -75,7 +75,7 @@ function CreateSpace({ onClose, onCreated }: {onClose: () => void; onCreated: (s
 
   return <dialog ref={modal} className="idx-space-dialog" aria-labelledby="idx-space-create-title"
     onCancel={event => { event.preventDefault(); if (!running) onClose() }}>
-    <header><h2 id="idx-space-create-title">新建游戏项目空间</h2><button type="button" className="idx-btn idx-quiet" disabled={running} onClick={onClose}>关闭</button></header>
+    <header><h2 id="idx-space-create-title">新建知识空间</h2><button type="button" className="idx-btn idx-quiet" disabled={running} onClick={onClose}>关闭</button></header>
     <form onSubmit={event => { event.preventDefault(); void create() }}>
       <p className="idx-muted">新空间从空图谱开始，拥有自己的审核队列和发布版本。</p>
       <label>项目名称<input value={name} maxLength={100} required autoFocus

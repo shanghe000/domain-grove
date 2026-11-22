@@ -28,7 +28,7 @@ const AXIOMS = [
   ["Pruning_Condition", "剪枝条件"],
 ] as const;
 const NODE_LABELS = { Domain: "业务领域", Metric: "业务指标", Concept: "业务概念", Artifact: "来源资料" };
-const DOC_TYPES = { feishu_md: "飞书策划案", duckdb_table: "Excel 配置表", tracking_api: "埋点定义" };
+const DOC_TYPES = { feishu_md: "飞书文档", duckdb_table: "Excel 配置表", tracking_api: "埋点定义" };
 const READ_MODES = { full_text: "读取正文", sql_on_demand: "按需 SQL 查询", api_filter: "按事件筛选" };
 const NODE_TONES = { Domain: "domain", Metric: "metric", Concept: "concept", Artifact: "artifact" };
 const MEMBER_TYPES = [["Metric", "指标"], ["Concept", "概念"], ["Artifact", "资料"]] as const;

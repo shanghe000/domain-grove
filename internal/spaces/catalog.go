@@ -52,7 +52,7 @@ type Member struct {
 	Role    string `json:"role"`
 }
 
-var defaultSpace = Space{ID: DefaultID, Name: "默认项目", Role: RoleReviewer}
+var defaultSpace = Space{ID: DefaultID, Name: "默认空间", Role: RoleReviewer}
 
 const schema = `
 CREATE TABLE IF NOT EXISTS spaces (
