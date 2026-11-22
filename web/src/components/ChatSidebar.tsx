@@ -159,7 +159,7 @@ export function ChatSidebar({ mock, identity, messages, progress, busy, onSend }
         {messages.length === 0 && (
           <div className="governance-start">
             <h3>从一份资料开始</h3>
-            <p>粘贴飞书策划案或配置下载链接，也可以拖入工作簿。生成草案后，在画布上核对再入库。</p>
+            <p>粘贴飞书文档或配置下载链接，也可以拖入工作簿。生成草案后，在画布上核对再入库。</p>
             {mock && (
               <div className="governance-examples" aria-label="试用样例">
                 <button type="button" disabled={waiting} onClick={() => void submit(FEISHU_SAMPLE, [])}>

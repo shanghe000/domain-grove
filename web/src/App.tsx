@@ -235,7 +235,7 @@ export function App() {
     return <main className="login-screen">
       <section aria-live="polite">
         <EngineMark />
-        <h1>游戏 BI 本体知识引擎</h1>
+        <h1>知域 · Domain Grove</h1>
         <p>{failed?.message ?? '正在读取工作台…'}</p>
         {failed?.login ? <a className="primary-button" href={failed.login}>登录</a>
           : failed && <button className="secondary-button" onClick={() => void load()}>重新加载</button>}
@@ -248,7 +248,7 @@ export function App() {
   const hasDraft = visibleChanges(patch) > 0
   return <div className="engine-workbench">
     <header className="engine-header">
-      <div className="engine-brand"><EngineMark /><h1>游戏 BI <span>本体知识引擎</span></h1></div>
+      <div className="engine-brand"><EngineMark /><h1>知域 <span>Domain Grove</span></h1></div>
       <div className="engine-toolbar">
         <button type="button" className="mobile-chat-toggle secondary-button" onClick={() => setMobileChat((visible) => !visible)}
           aria-expanded={mobileChat} aria-controls="governance-pane">{mobileChat ? '收起治理' : '治理 AI'}</button>

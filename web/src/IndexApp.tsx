@@ -24,7 +24,7 @@ type Detail = { proposal: Proposal; preview?: Graph; preview_error?: string; gra
 type Identity = { user_id: string; username: string }
 type Decision = 'approve' | 'reject'
 
-const defaultProject: ProjectSpace = { id: 'default', name: '默认项目', role: 'reviewer' }
+const defaultProject: ProjectSpace = { id: 'default', name: '默认空间', role: 'reviewer' }
 const kinds: Record<NodeKind, string> = { domain: '领域', concept: '概念', metric: '指标', document: '文档', skill: '技能', tool: '工具', artifact:'资料载体' }
 const statuses: Record<Status, string> = { pending: '待审核', approved: '已发布', rejected: '已驳回' }
 const stamp = (value?: string) => value ? new Date(value).toLocaleString('zh-CN', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''
@@ -62,7 +62,7 @@ export function IndexApp() {
   return <div className="idx login-screen">
     <section aria-live="polite">
       <EngineMark />
-      <h1>游戏 BI 本体知识引擎</h1>
+      <h1>知域 · Domain Grove</h1>
       {loginURL ? <>
         <p>登录后可浏览本体图谱、核对 AI 提案及其知识来源。</p>
         <a className="primary-button" href={loginURL}>登录</a>
@@ -110,10 +110,10 @@ function ProjectWorkspace({ session, onLogin }: {session: Identity; onLogin: (ur
   if (!spaces || !current) return <div className="idx login-screen">
     <section aria-live="polite">
       <EngineMark />
-      <h1>游戏 BI 本体知识引擎</h1>
+      <h1>知域 · Domain Grove</h1>
       {error ? <><p role="alert">{error}</p><button className="idx-btn" onClick={() => { setError(''); setReload(value => value + 1) }}>重试</button></> :
         spaces ? <><p role="alert">当前项目空间不可用。请选择有权限的项目。</p>
-          <label className="idx-project-select"><span>游戏项目空间</span><select value="" onChange={event => select(event.target.value)}>
+          <label className="idx-project-select"><span>知识空间</span><select value="" onChange={event => select(event.target.value)}>
             <option value="" disabled>选择空间</option>{spaces.map(space => <option key={space.id} value={space.id}>{space.name}</option>)}
           </select></label></> : <p role="status">正在读取项目空间…</p>}
     </section>
@@ -355,7 +355,7 @@ function Workspace({ session, onLogin, space, spaces, onSelectSpace, onCreatedSp
   const eligible = proposal?.status === 'pending' && !submitting
   return <div className="idx engine-workbench index-workbench">
     <header className="engine-header">
-      <div className="engine-brand"><EngineMark /><h1>游戏 BI <span>本体知识引擎</span></h1></div>
+      <div className="engine-brand"><EngineMark /><h1>知域 <span>Domain Grove</span></h1></div>
       <ProjectSpaces spaces={spaces} current={space} canCreate={Boolean(graph) && reviewAvailable} ownSubject={session.user_id}
         onSelect={onSelectSpace} onCreated={onCreatedSpace} />
       <div className="engine-toolbar">
@@ -630,7 +630,7 @@ const propLabels:Record<string,string>={event:'事件',distinct_key:'去重键',
 function IndexProperties({node}:{node:IndexNode}){
   const rows=Object.entries(node.properties ?? {})
   const value=(v:unknown)=> v==null?'待确认':typeof v==='string'?v:Array.isArray(v)?v.map(x=>typeof x==='object'?JSON.stringify(x):String(x)).join('、'):typeof v==='object'?JSON.stringify(v,null,2):String(v)
-  const words:Record<string,string>={verified_with_open_checks:'已核对，仍有待确认项',active:'生效中',deprecated:'已废弃',document:'业务文档',event_spec:'埋点规范',config_table:'配置表',tool:'工具',skill:'技能',S0:'底层资料',S1:'稳态玩法',S2:'版本与活动干预',S3:'分析指标',sink:'公共汇点',source:'核心源点',user:'用户',day:'自然日'}
+  const words:Record<string,string>={verified_with_open_checks:'已核对，仍有待确认项',active:'生效中',deprecated:'已废弃',document:'业务文档',event_spec:'埋点规范',config_table:'配置表',tool:'工具',skill:'技能',S0:'底层资料',S1:'稳态机制',S2:'业务变更与干预',S3:'分析指标',sink:'公共汇点',source:'核心源点',user:'用户',day:'自然日'}
   function row([k,v]:[string,unknown]) {return <div key={k} className={/uncertain|low_confidence|pending_confirmation/.test(k)?'idx-warning':''}><dt>{propLabels[k] ?? k}</dt><dd>{typeof v==='string' && words[v] ? words[v]:value(v)}</dd></div>}
   return <section className="drawer-section"><dl className="idx-fields">{rows.filter(([k])=>k in propLabels && k!=='owner' && k!=='lifecycle').map(row)}</dl>
     <details className="idx-tech-details"><summary>字段与技术索引</summary><dl className="idx-fields"><div><dt>索引 ID</dt><dd>{node.id}</dd></div>{rows.filter(([k])=>!(k in propLabels)).map(row)}</dl></details></section>

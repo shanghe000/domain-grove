@@ -52,7 +52,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or Settings()
     extractor = Extractor(settings)
     chat_slots = BoundedSemaphore(4)
-    app = FastAPI(title="Ontology Engine Extraction Worker", docs_url=None, redoc_url=None, openapi_url=None)
+    app = FastAPI(title="Domain Grove Extraction Worker", docs_url=None, redoc_url=None, openapi_url=None)
 
     @app.exception_handler(WorkerError)
     def worker_error(_request: Request, error: WorkerError):

@@ -1007,7 +1007,7 @@ function CanvasLayer({ graph, hierarchical = false, emptyText, view, active, pha
           <div className="portal-zoom" role="group" aria-label="图谱缩放">
             {hierarchical && <div className="portal-view-switch" role="group" aria-label="分层视图">
               {([['flat','平面'],['structure','索引分层'],['causal','业务因果']] as const).map(([mode,label])=>(
-                <button type="button" key={mode} title={mode==='flat'?'查看当前层的平面图':mode==='structure'?'按领域、业务与资料分层，右键拖动旋转':'按指标、干预、玩法与资料分层，右键拖动旋转'} aria-pressed={mode==='flat' ? !depthRequested : depthRequested && cut===mode}
+                <button type="button" key={mode} title={mode==='flat'?'查看当前层的平面图':mode==='structure'?'按领域、业务与资料分层，右键拖动旋转':'按指标、干预、机制与资料分层，右键拖动旋转'} aria-pressed={mode==='flat' ? !depthRequested : depthRequested && cut===mode}
                   onClick={()=>{
                     if(mode==='flat') tiltTo(0,0);
                     else {setCut(mode); if(!depthRequested) tiltTo(1.02,.32);}

@@ -14,7 +14,7 @@ from settings import NODE_ID, STAGE_ID, Settings, WorkerError, deadline, now, re
 from tracking_sync import tracking_definition
 
 MODES = {"feishu_md": "full_text", "duckdb_table": "sql_on_demand", "tracking_api": "api_filter"}
-TOOL_LABELS = {FEISHU: "飞书策划案", CONFIG: "配置工作簿", TRACKING: "埋点定义"}
+TOOL_LABELS = {FEISHU: "飞书文档", CONFIG: "配置工作簿", TRACKING: "埋点定义"}
 EDGE_LABELS = {"depends_on": ("口径依赖", 0.5), "impacted_by": ("受影响于", 1.0),
                "defined_in": ("定义于", 0.5), "configured_by": ("配置于", 0.5), "foreign_key_to": ("外键关联", 0.5)}
 

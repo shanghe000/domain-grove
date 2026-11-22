@@ -1,33 +1,33 @@
 schema_version: 2
 revision: 1
 nodes:
-  - id: domain.analysis
+  - id: domain.reading
     kind: domain
-    label: 数据分析域
-  - id: metric.login_dau
+    label: 阅读与留存
+  - id: metric.return_rate
     kind: metric
-    label: 登录 DAU
-    parent_id: domain.analysis
+    label: 次日回访率
+    parent_id: domain.reading
+    description: 首日阅读用户中，次日再次阅读的比例。
     properties:
       cognitive_layer: S3
-      dimensions: [渠道, 区服]
     axioms:
       - kind: pitfall
-        text: 计算前向负责人确认统计日的时区。
-  - id: artifact.event_dictionary
+        text: 以同一时区切分首日和次日，并使用同一去重规则。
+  - id: artifact.retention_definition
     kind: artifact
-    label: 登录事件字典
-    parent_id: domain.analysis
+    label: 留存指标规范
+    parent_id: metric.return_rate
     properties:
-      artifact_type: event_spec
+      artifact_type: document
       cognitive_layer: S0
     ref:
-      repository: example-bi
-      path: tracking/events.csv
-      read_strategy: 按事件名筛选
+      repository: sample-community
+      path: sources/retention.md
+      read_strategy: 按标题定位
 edges:
-  - id: edge.login_dau.event
-    from: metric.login_dau
-    to: artifact.event_dictionary
+  - id: edge.return_definition
+    from: metric.return_rate
+    to: artifact.retention_definition
     relation: depends_on
-    anchor: event_name=user_auth
+    anchor: 次日回访率

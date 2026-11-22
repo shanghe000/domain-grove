@@ -202,7 +202,7 @@ func publishedSchema() (schemaResult, error) {
 
 func newProtocolHandlers(store *index.Store, schema schemaResult, submitterID string) protocolHandlers {
 	server := protocol.NewServer(&protocol.Implementation{
-		Name: "ontology-index", Title: "游戏 BI 本体索引", Version: "2.0.0",
+		Name: "ontology-index", Title: "知域 · Domain Grove", Version: "2.0.0",
 	}, nil)
 	registerSemanticTools(server, store, submitterID != "")
 	protocol.AddTool(server, readTool("get_index_schema", "Read the published index and proposal JSON contracts."),

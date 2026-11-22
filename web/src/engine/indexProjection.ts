@@ -1,7 +1,7 @@
 import type { Edge, Graph, Node } from '../types';
 
 export type Cut = 'structure' | 'causal';
-export const planeNames = {structure:['资料与工具','业务概念与指标','领域'],causal:['底层资料','稳态玩法','版本与活动干预','分析指标']};
+export const planeNames = {structure:['资料与工具','业务概念与指标','领域'],causal:['底层资料','稳态机制','业务变更与干预','分析指标']};
 export function plane(node:Node, cut:Cut):number {
   if(cut === 'structure') return node.node_type === 'Domain' ? 2 : node.node_type === 'Artifact' ? 0 : 1;
   if(node.node_type === 'Artifact') return 0;
