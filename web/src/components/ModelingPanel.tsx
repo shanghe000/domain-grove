@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { explain, request, RequestError } from '../api/client'
+import { explain, request } from '../api/client'
 import type { Graph, Patch, Proposal, Reference } from '../IndexApp'
 import { PanelIcon } from './ChatSidebar'
 
@@ -22,10 +22,9 @@ type Props = {
   draft?: ModelingDraft
   onDraft: (draft?: ModelingDraft) => void
   onSubmitted: (proposal: Proposal) => void
-  onLogin: (url: string) => void
 }
 
-export function ModelingPanel({ active, readOnly, endpoint, revision, draft, onDraft, onSubmitted, onLogin }: Props) {
+export function ModelingPanel({ active, readOnly, endpoint, revision, draft, onDraft, onSubmitted }: Props) {
   const [enabled, setEnabled] = useState<boolean>()
   const [instruction, setInstruction] = useState('')
   const [refs, setRefs] = useState<ReferenceInput[]>([])
@@ -44,17 +43,10 @@ export function ModelingPanel({ active, readOnly, endpoint, revision, draft, onD
       if (!current) return
       setEnabled(status.enabled)
     }).catch(problem => {
-      if (!current) return
-      if (problem instanceof RequestError && problem.status === 401 && problem.loginURL) onLogin(problem.loginURL)
-      else setError(explain(problem))
+      if (current) setError(explain(problem))
     })
     return () => { current = false }
-  }, [active, endpoint, onLogin, readOnly, reloadStatus])
-
-  function report(problem: unknown) {
-    if (problem instanceof RequestError && problem.status === 401 && problem.loginURL) onLogin(problem.loginURL)
-    else setError(explain(problem))
-  }
+  }, [active, endpoint, readOnly, reloadStatus])
 
   async function plan() {
     if (readOnly || (!enabled && !source) || working || !trimmed) return
@@ -77,7 +69,7 @@ export function ModelingPanel({ active, readOnly, endpoint, revision, draft, onD
       }
       const result = await request<Omit<ModelingDraft, 'request_id'>>(endpoint, { instruction: instruction.trim(), references })
       onDraft({ ...result, request_id: crypto.randomUUID() })
-    } catch (problem) { report(problem) }
+    } catch (problem) { setError(explain(problem)) }
     finally { setWorking('') }
   }
 
@@ -91,7 +83,7 @@ export function ModelingPanel({ active, readOnly, endpoint, revision, draft, onD
       setInstruction('')
       setRefs([])
       onSubmitted(proposal)
-    } catch (problem) { report(problem) }
+    } catch (problem) { setError(explain(problem)) }
     finally { setWorking('') }
   }
 
@@ -108,7 +100,7 @@ export function ModelingPanel({ active, readOnly, endpoint, revision, draft, onD
         <h3>从一条建模指令开始</h3>
         <p>描述要调整的业务节点或有向关系，可附知识定位。草稿会在画布上预览，经审核后发布。</p>
       </div>
-      {readOnly ? <p className="idx-muted">当前为只读预览。请在 HTTPS 工作台登录后建模。</p> : <>
+      {readOnly ? <p className="idx-muted">当前为只读预览。启用本机审核后可提交建模提案。</p> : <>
         {enabled === undefined && !error && <p role="status" className="idx-muted">正在检查 AI 建模配置…</p>}
         {enabled === false && <p className="idx-warning">尚未配置 DeepSeek 服务凭据。BI Agent 仍可通过 MCP 提交提案。</p>}
         {error && <p className="idx-error" role="alert">{error}</p>}

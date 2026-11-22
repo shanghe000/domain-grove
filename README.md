@@ -49,7 +49,7 @@
    npm run build --prefix web
 
    sample_data="$(mktemp -d)"
-   AUTH_ENABLED=false ONTOLOGY_MODE=index INDEX_ALLOW_DEV_REVIEW=true \
+   ONTOLOGY_MODE=index INDEX_ALLOW_DEV_REVIEW=true \
      GO_SERVER_ADDR=127.0.0.1:8080 PUBLIC_URL=http://127.0.0.1:8080 \
      DATA_DIR="$sample_data" go run ./cmd/server
    ```
@@ -74,7 +74,7 @@
 
 ## 数据与部署
 
-SQLite 保存图谱、提案和发布版本。图谱以仓库别名、相对路径和锚点定位资料，原文由资料来源侧管理。示例在本机回环地址运行，并在独立的临时目录写入合成数据。共享部署的登录、模型和 MCP 凭据由部署方配置。[运行配置](docs/CONFIGURATION.md)
+SQLite 保存图谱、提案和发布版本。图谱以仓库别名、相对路径和锚点定位资料，原文由资料来源侧管理。工作台仅监听本机回环地址。示例使用独立的临时目录，MCP 读取和提交各用独立凭据。[运行配置](docs/CONFIGURATION.md)
 
 ## 架构
 

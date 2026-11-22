@@ -96,10 +96,10 @@ button, input, textarea, select { caret-color: #c3c1ff; }
 .engine-dialog p { color: #b7c3d5; margin: 0 0 20px; font-size: 14px; }
 .engine-dialog div { display: flex; justify-content: flex-end; gap: 8px; }
 
-.login-screen { min-height: 100dvh; display: grid; place-items: center; padding: 24px; background: radial-gradient(ellipse at 35% 35%, #202443, #101522 64%); }
-.login-screen section { width: min(100%, 445px); padding: 32px; background: #151d2d; border: 1px solid #404c67; border-radius: 14px; }
-.login-screen h1 { margin: 19px 0 10px; font-size: clamp(23px, 4vw, 30px); line-height: 1.25; font-weight: 700; letter-spacing: -.025em; }
-.login-screen p { color: var(--muted); font-size: 14px; margin: 0 0 20px; }
+.workbench-status { min-height: 100dvh; display: grid; place-items: center; padding: 24px; background: radial-gradient(ellipse at 35% 35%, #202443, #101522 64%); }
+.workbench-status section { width: min(100%, 445px); padding: 32px; background: #151d2d; border: 1px solid #404c67; border-radius: 14px; }
+.workbench-status h1 { margin: 19px 0 10px; font-size: clamp(23px, 4vw, 30px); line-height: 1.25; font-weight: 700; letter-spacing: -.025em; }
+.workbench-status p { color: var(--muted); font-size: 14px; margin: 0 0 20px; }
 .mobile-chat-toggle { display: none; }
 
 @media (max-width: 1080px) {

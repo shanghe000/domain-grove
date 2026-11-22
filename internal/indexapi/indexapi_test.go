@@ -4,10 +4,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"encoding/pem"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -258,16 +256,12 @@ func TestIndexCredentialAndDevelopmentReviewGates(t *testing.T) {
 	handler.ServeHTTP(rec, req)
 	requireStatus(t, rec, http.StatusForbidden)
 
-	provider, err := auth.New(context.Background(), auth.Config{})
-	if err != nil {
-		t.Fatal(err)
-	}
 	for _, allow := range []bool{false, true} {
 		mux := http.NewServeMux()
 		RegisterReview(mux, store, allow)
 		queue := "/api/v1/index/proposals"
 		requireStatus(t, reviewRequest(mux, http.MethodGet, queue, "", ""), http.StatusUnauthorized)
-		secured := provider.Middleware(mux)
+		secured := auth.LocalIdentity(mux)
 		want := http.StatusForbidden
 		if allow {
 			want = http.StatusOK
@@ -283,40 +277,18 @@ func TestIndexCredentialAndDevelopmentReviewGates(t *testing.T) {
 
 func authenticatedReview(t *testing.T, store *index.Store, register ...func(*http.ServeMux)) http.Handler {
 	t.Helper()
-	verifier := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Header.Get("Authorization") != "Bearer "+reviewTestToken {
-			w.WriteHeader(http.StatusUnauthorized)
-			return
-		}
-		var body map[string]string
-		if r.Method != http.MethodPost || json.NewDecoder(r.Body).Decode(&body) != nil || body["app_id"] != "index-review-fixture" {
-			t.Error("incorrect identity verifier request")
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		_ = json.NewEncoder(w).Encode(map[string]any{
-			"active": true, "user_id": "reviewer-fixture", "username": "审核员", "dept": "BI",
-		})
-	}))
-	t.Cleanup(verifier.Close)
-	caPath := filepath.Join(t.TempDir(), "review-verifier.pem")
-	cert := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: verifier.Certificate().Raw})
-	if err := os.WriteFile(caPath, cert, 0600); err != nil {
-		t.Fatal(err)
-	}
-	provider, err := auth.New(context.Background(), auth.Config{
-		Enabled: true, AppID: "index-review-fixture", AuthURL: "https://login.example.test",
-		VerifyTokenURL: verifier.URL, TLSCAFile: caPath,
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
 	mux := http.NewServeMux()
 	RegisterReview(mux, store, false)
 	for _, attach := range register {
 		attach(mux)
 	}
-	return provider.Middleware(mux)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Authorization") == "Bearer "+reviewTestToken {
+			user := &auth.UserIdentity{UserID: "reviewer-fixture", Username: "审核员"}
+			r = r.WithContext(auth.WithIdentity(r.Context(), user))
+		}
+		mux.ServeHTTP(w, r)
+	})
 }
 
 func reviewRequest(handler http.Handler, method, path, token, body string) *httptest.ResponseRecorder {

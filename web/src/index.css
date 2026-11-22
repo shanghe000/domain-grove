@@ -63,10 +63,10 @@
 }
 .idx-space-confirm { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; justify-content: flex-end; }
 .idx-space-confirm p { margin-right: auto; color: var(--idx-muted); }
-.idx-space-credential, .idx-add-member { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 8px; }
+.idx-space-credential { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 8px; }
 .idx-space-members { list-style: none; padding: 0; }
 .idx-space-members li { padding-block: 7px; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 3px 8px; border-bottom: 1px solid var(--idx-line-quiet); }
-.idx-space-members :is(code, .idx-space-member-name) { overflow-wrap: anywhere; }
+.idx-space-members code { overflow-wrap: anywhere; }
 .idx-space-members small { grid-column: 1; color: var(--idx-muted); }
 .idx-space-members .idx-btn, .idx-space-members .idx-space-actions { grid-column: 2; grid-row: 1 / span 2; justify-self: end; }
 .idx-btn {

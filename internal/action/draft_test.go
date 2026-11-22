@@ -31,13 +31,9 @@ func actionFixture(t *testing.T, worker http.Handler) (*Service, http.Handler) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	provider, err := auth.New(t.Context(), auth.Config{})
-	if err != nil {
-		t.Fatal(err)
-	}
 	mux := http.NewServeMux()
 	service.Register(mux)
-	return service, provider.Middleware(mux)
+	return service, auth.LocalIdentity(mux)
 }
 
 func postAction(handler http.Handler, path, body string) *httptest.ResponseRecorder {

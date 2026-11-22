@@ -1,5 +1,5 @@
 export class RequestError extends Error {
-  constructor(message: string, readonly status: number, readonly loginURL?: string) {
+  constructor(message: string, readonly status: number) {
     super(message)
   }
 }
@@ -10,7 +10,7 @@ export async function request<T>(path: string, value?: unknown): Promise<T> {
   })
   if (!response.ok) {
     const detail = await response.json().catch(() => null)
-    throw new RequestError(detail?.error ?? '工作台暂时不可用，请稍后重试。', response.status, detail?.login_url)
+    throw new RequestError(detail?.error ?? '工作台暂时不可用，请稍后重试。', response.status)
   }
   if (response.status === 204) return undefined as T
   return response.json() as Promise<T>

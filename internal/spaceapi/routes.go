@@ -23,29 +23,27 @@ type API struct {
 	allowDevReview bool
 	planner        indexapi.ModelingPlanner
 	submitterID    string
-	listPeople     ListPeople
 
 	mutex         sync.Mutex
 	indexHandlers map[*index.Store]http.Handler
 }
 
-func New(catalog *spaces.Catalog, allowDevReview bool, planner indexapi.ModelingPlanner, submitterID string, listPeople ListPeople) *API {
+func New(catalog *spaces.Catalog, allowDevReview bool, planner indexapi.ModelingPlanner, submitterID string) *API {
 	submitterID = strings.TrimSpace(submitterID)
 	if submitterID == "" {
 		submitterID = "bi-agent"
 	}
 	return &API{catalog: catalog, allowDevReview: allowDevReview, planner: planner,
-		submitterID: submitterID, listPeople: listPeople, indexHandlers: make(map[*index.Store]http.Handler)}
+		submitterID: submitterID, indexHandlers: make(map[*index.Store]http.Handler)}
 }
 
-// Register must be mounted below the authentication middleware.
+// Register must be mounted below the workbench identity middleware.
 func (a *API) Register(operate *http.ServeMux) {
 	operate.Handle("GET "+spacesPath, a.identity(false, a.list))
 	operate.Handle("POST "+spacesPath, a.identity(true, a.create))
 
 	const project = spacesPath + "/{space}"
 	operate.Handle("GET "+project+"/members", a.identity(true, a.members))
-	operate.Handle("GET "+project+"/member-candidates", a.identity(true, a.memberCandidates))
 	operate.Handle("POST "+project+"/members", a.identity(true, a.addMember))
 	operate.Handle("POST "+project+"/members/remove", a.identity(true, a.removeMember))
 	operate.Handle("POST "+project+"/credentials", a.identity(true, a.rotate))
@@ -62,12 +60,12 @@ func (a *API) identity(manage bool, next userHandler) http.Handler {
 		w.Header().Set("Cache-Control", "no-store")
 		user, found := auth.IdentityFromContext(r.Context())
 		if !found || user == nil || strings.TrimSpace(user.UserID) == "" {
-			writeProblem(w, http.StatusUnauthorized, "需要登录。")
+			writeProblem(w, http.StatusUnauthorized, "工作台身份不可用。")
 			return
 		}
-		if !a.allowDevReview && user.UserID == "dev_user" && (manage ||
+		if !a.allowDevReview && user.UserID == auth.LocalUserID && (manage ||
 			(r.PathValue("space") != "" && r.PathValue("space") != spaces.DefaultID)) {
-			writeProblem(w, http.StatusForbidden, "项目空间需要登录。")
+			writeProblem(w, http.StatusForbidden, "当前工作台以只读模式运行。")
 			return
 		}
 		next(w, r, user)
@@ -80,7 +78,7 @@ func (a *API) list(w http.ResponseWriter, r *http.Request, user *auth.UserIdenti
 		writeCatalogError(w, err)
 		return
 	}
-	if user.UserID == "dev_user" && !a.allowDevReview {
+	if user.UserID == auth.LocalUserID && !a.allowDevReview {
 		visible := []spaces.Space{}
 		for _, space := range result {
 			if space.ID == spaces.DefaultID {
@@ -131,42 +129,12 @@ func (a *API) addMember(w http.ResponseWriter, r *http.Request, user *auth.UserI
 	if !readJSON(w, r, &input) {
 		return
 	}
-	var name string
-	if a.listPeople != nil {
-		members, err := a.catalog.Members(r.Context(), r.PathValue("space"), user.UserID)
-		if err != nil {
-			writeCatalogError(w, err)
-			return
-		}
-		for _, member := range members {
-			if member.Subject == input.Subject && member.Role == spaces.RoleReviewer {
-				writeJSON(w, http.StatusOK, member)
-				return
-			}
-		}
-		if input.Subject == user.UserID {
-			writeCatalogError(w, spaces.ErrConflict)
-			return
-		}
-		people, ok := a.directory(w, r)
-		if !ok {
-			return
-		}
-		name, ok = people[input.Subject]
-		if !ok {
-			writeProblem(w, http.StatusUnprocessableEntity, "该人员当前没有知识引擎使用权限，请刷新人员名单。")
-			return
-		}
-	}
 	result, err := a.catalog.AddMember(r.Context(), r.PathValue("space"), user.UserID, input.Subject)
 	if err != nil {
 		writeCatalogError(w, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, struct {
-		spaces.Member
-		DisplayName string `json:"display_name,omitempty"`
-	}{result, name})
+	writeJSON(w, http.StatusOK, result)
 }
 
 func (a *API) removeMember(w http.ResponseWriter, r *http.Request, user *auth.UserIdentity) {

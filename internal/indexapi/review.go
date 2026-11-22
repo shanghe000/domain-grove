@@ -32,7 +32,7 @@ type indexHTTP struct {
 	allowDevReview bool
 }
 
-// RegisterReview must be mounted under the authentication middleware.
+// RegisterReview must be mounted under the workbench identity middleware.
 func RegisterReview(mux *http.ServeMux, store *index.Store, allowDevReview bool) {
 	service := indexHTTP{store: store, allowDevReview: allowDevReview}
 	mux.Handle("GET /api/v1/index", service.identity(false, service.graph))
@@ -55,11 +55,11 @@ func (s indexHTTP) identity(review bool, next identityHandler) http.Handler {
 		w.Header().Set("Cache-Control", "no-store")
 		user, found := auth.IdentityFromContext(r.Context())
 		if !found || user == nil || strings.TrimSpace(user.UserID) == "" {
-			writeError(w, http.StatusUnauthorized, "需要登录。")
+			writeError(w, http.StatusUnauthorized, "工作台身份不可用。")
 			return
 		}
-		if review && user.UserID == "dev_user" && !s.allowDevReview {
-			writeError(w, http.StatusForbidden, "索引审核需要 登录。")
+		if review && user.UserID == auth.LocalUserID && !s.allowDevReview {
+			writeError(w, http.StatusForbidden, "工作台尚未启用本机审核。")
 			return
 		}
 		next(w, r, user)
