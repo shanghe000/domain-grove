@@ -4,7 +4,7 @@
 
 **Maintain traceable business knowledge over time with ontology modeling and domain-driven design (DDD).**
 
-[English](README.en.md) · [简体中文](README.md) · [Quick start](#quick-start) · [Modeling guide](#how-knowledge-evolves)
+[English](README.en.md) · [简体中文](README.md) · [Quick start](#quick-start) · [Modeling](#how-knowledge-evolves)
 
 [![Go 1.25+](https://img.shields.io/badge/Go-1.25%2B-177d73.svg)](#quick-start)
 [![CI](https://github.com/shanghe000/domain-grove/actions/workflows/quality.yml/badge.svg?branch=main&event=push)](https://github.com/shanghe000/domain-grove/actions/workflows/quality.yml)
