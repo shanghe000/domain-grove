@@ -60,7 +60,7 @@ func connect(t *testing.T, ctx context.Context, endpoint, token string, sse bool
 
 func TestProjectMCPTokenAndSessionIsolation(t *testing.T) {
 	store, cat := openFixture(t)
-	api := New(cat, false, nil, "project-agent", nil)
+	api := New(cat, false, nil, "project-agent")
 	defaultHandler, err := indexapi.NewMCPHandler(store, "fixture-default", "fixture-default-submit", "")
 	if err != nil {
 		t.Fatal(err)

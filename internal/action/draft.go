@@ -201,7 +201,7 @@ func (s *Service) persistDraft(ctx context.Context, d *draft, validate bool) err
 }
 
 func (d *draft) addHistory(identity *auth.UserIdentity, actor string, operations []operation) {
-	saved := historyEntry{Actor: actor, UserID: identity.UserID, Username: identity.Username, Dept: identity.Dept,
+	saved := historyEntry{Actor: actor, UserID: identity.UserID, Username: identity.Username,
 		At: timestamp(), Operations: operations, Before: d.Patch, Payload: d.Payload, SourceType: d.SourceType}
 	d.History = append(d.History, saved)
 	if len(d.History) > 30 {

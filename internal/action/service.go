@@ -121,7 +121,7 @@ func problem(status int, text string) error { return &apiError{status, text} }
 func wrap(fn func(http.ResponseWriter, *http.Request) error) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if _, ok := auth.IdentityFromContext(r.Context()); !ok {
-			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "请登录后继续。"})
+			writeJSON(w, http.StatusUnauthorized, map[string]string{"error": "工作台身份不可用。"})
 			return
 		}
 		if err := fn(w, r); err != nil {

@@ -10,20 +10,16 @@ import (
 )
 
 func TestServerRoutes(t *testing.T) {
-	provider, err := auth.New(t.Context(), auth.Config{})
-	if err != nil {
-		t.Fatal(err)
-	}
 	governance := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if _, ok := auth.IdentityFromContext(r.Context()); !ok {
-			t.Error("governance request did not pass through auth middleware")
+		if user, ok := auth.IdentityFromContext(r.Context()); !ok || user.UserID != auth.LocalUserID {
+			t.Error("governance request did not receive the local identity")
 		}
 		_, _ = w.Write([]byte("operate"))
 	})
 	mcp := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte("consume")) })
 	health := func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte("healthy")) }
 	web := staticWeb(fstest.MapFS{"index.html": {Data: []byte("canvas")}})
-	routes := newRoutes(provider, governance, mcp, web, health, true)
+	routes := newRoutes(governance, mcp, web, health, true)
 	for _, tc := range []struct {
 		method, path, body string
 		status             int
@@ -45,31 +41,59 @@ func TestServerRoutes(t *testing.T) {
 	}
 }
 
-func TestDeveloperBindRequiresLoopback(t *testing.T) {
-	t.Setenv("AUTH_ENABLED", "false")
+func TestWorkbenchBindRequiresLoopback(t *testing.T) {
+	t.Setenv("AUTH_ENABLED", "")
 	t.Setenv("PUBLIC_URL", "")
 	t.Setenv("PYTHON_WORKER_URL", "http://127.0.0.1:8001")
 	t.Setenv("GO_TLS_CERT_FILE", "")
 	t.Setenv("GO_TLS_KEY_FILE", "")
-	t.Setenv("GO_SERVER_ADDR", ":8080")
-	t.Setenv("ALLOW_INSECURE_DEV", "true")
-	t.Setenv("DEV_PUBLISH_HOST", "0.0.0.0")
+	for _, address := range []string{":8080", "0.0.0.0:8080", "workbench.example.test:8080"} {
+		t.Setenv("GO_SERVER_ADDR", address)
+		if _, err := loadSettings(); err == nil {
+			t.Errorf("accepted non-loopback address %q", address)
+		}
+	}
+	t.Setenv("GO_SERVER_ADDR", "localhost:8080")
+	settings, err := loadSettings()
+	if err != nil || settings.addr != "127.0.0.1:8080" {
+		t.Fatalf("unexpected local address %q: %v", settings.addr, err)
+	}
+	t.Setenv("PUBLIC_URL", "https://workbench.example.test")
 	if _, err := loadSettings(); err == nil {
-		t.Fatal("reject development mode when published on every interface")
+		t.Fatal("accepted a non-loopback workbench origin")
 	}
-	t.Setenv("DEV_PUBLISH_HOST", "127.0.0.1")
-	if _, err := loadSettings(); err != nil {
-		t.Fatal(err)
-	}
-	t.Setenv("GO_SERVER_ADDR", "127.0.0.1:8080")
-	t.Setenv("ALLOW_INSECURE_DEV", "false")
-	if _, err := loadSettings(); err != nil {
-		t.Fatal(err)
+	t.Setenv("PUBLIC_URL", "http://127.0.0.1:8080")
+	t.Setenv("AUTH_ENABLED", "true")
+	if _, err := loadSettings(); err == nil {
+		t.Fatal("silently started the local workbench for an incompatible identity configuration")
 	}
 }
 
-func TestCookieOperationsRejectCrossOrigin(t *testing.T) {
-	const origin = "https://engine.example.test:8443"
+func TestWorkbenchRejectsNonLoopbackHost(t *testing.T) {
+	handler := browserHeaders("", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	for _, tt := range []struct {
+		host string
+		want int
+	}{
+		{"127.0.0.1:8080", http.StatusNoContent},
+		{"localhost", http.StatusNoContent},
+		{"[::1]:8080", http.StatusNoContent},
+		{"workbench.example.test", http.StatusForbidden},
+	} {
+		req := httptest.NewRequest(http.MethodGet, "/api/v1/index", nil)
+		req.Host = tt.host
+		res := httptest.NewRecorder()
+		handler.ServeHTTP(res, req)
+		if res.Code != tt.want {
+			t.Errorf("host %q: got %d, want %d", tt.host, res.Code, tt.want)
+		}
+	}
+}
+
+func TestBrowserWritesRejectCrossOrigin(t *testing.T) {
+	const origin = "http://127.0.0.1:8080"
 	mux := browserHeaders(origin, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 	}))
@@ -79,7 +103,7 @@ func TestCookieOperationsRejectCrossOrigin(t *testing.T) {
 	}{
 		{"/api/v1/chat/message", origin, "same-origin", http.StatusNoContent},
 		{"/api/v1/chat/message", "https://other.example.test", "same-site", http.StatusForbidden},
-		{"/auth/logout", "", "cross-site", http.StatusForbidden},
+		{"/api/v1/chat/message", "", "cross-site", http.StatusForbidden},
 		{"/mcp", "", "", http.StatusNoContent},
 	} {
 		r := httptest.NewRequest(http.MethodPost, origin+tc.path, nil)

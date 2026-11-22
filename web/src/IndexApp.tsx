@@ -36,13 +36,8 @@ const emptyCanvas: CanvasGraph = { nodes: [], edges: [], artifacts: [] }
 export function IndexApp() {
   const [session, setSession] = useState<Identity>()
   const [legacy, setLegacy] = useState(false)
-  const [loginURL, setLoginURL] = useState('')
   const [error, setError] = useState('')
   const [retry, setRetry] = useState(0)
-  const reauthenticate = useCallback((url: string) => {
-    setSession(undefined)
-    setLoginURL(url)
-  }, [])
 
   useEffect(() => {
     let active = true
@@ -51,22 +46,18 @@ export function IndexApp() {
     }).catch(problem => {
       if (!active) return
       if (problem instanceof RequestError && problem.status === 404) setLegacy(true)
-      else if (problem instanceof RequestError && problem.status === 401 && problem.loginURL) setLoginURL(problem.loginURL)
       else setError(explain(problem))
     })
     return () => { active = false }
   }, [retry])
 
   if (legacy) return <App />
-  if (session) return <ProjectWorkspace session={session} onLogin={reauthenticate} />
-  return <div className="idx login-screen">
+  if (session) return <ProjectWorkspace session={session} />
+  return <div className="idx workbench-status">
     <section aria-live="polite">
       <EngineMark />
       <h1>知域 · Domain Grove</h1>
-      {loginURL ? <>
-        <p>登录后可浏览本体图谱、核对 AI 提案及其知识来源。</p>
-        <a className="primary-button" href={loginURL}>登录</a>
-      </> : error ? <>
+      {error ? <>
         <p role="alert">{error}</p>
         <button className="idx-btn" onClick={() => { setError(''); setRetry(retry + 1) }}>重试</button>
       </> : <p role="status">正在连接工作台…</p>}
@@ -74,7 +65,7 @@ export function IndexApp() {
   </div>
 }
 
-function ProjectWorkspace({ session, onLogin }: {session: Identity; onLogin: (url: string) => void}) {
+function ProjectWorkspace({ session }: {session: Identity}) {
   const [spaces, setSpaces] = useState<ProjectSpace[]>()
   const [selected, setSelected] = useState(() => new URLSearchParams(location.search).get('project') || defaultProject.id)
   const [error, setError] = useState('')
@@ -94,12 +85,11 @@ function ProjectWorkspace({ session, onLogin }: {session: Identity; onLogin: (ur
       if (active) setSpaces(result.spaces)
     }).catch(problem => {
       if (!active) return
-      if (problem instanceof RequestError && problem.status === 401 && problem.loginURL) onLogin(problem.loginURL)
-      else if (problem instanceof RequestError && problem.status === 403) setSpaces([defaultProject])
+      if (problem instanceof RequestError && problem.status === 403) setSpaces([defaultProject])
       else setError(explain(problem))
     })
     return () => { active = false }
-  }, [onLogin, reload])
+  }, [reload])
 
   const revoked = useCallback(() => {
     setSpaces(undefined)
@@ -107,7 +97,7 @@ function ProjectWorkspace({ session, onLogin }: {session: Identity; onLogin: (ur
   }, [])
 
   const current = spaces?.find(space => space.id === selected)
-  if (!spaces || !current) return <div className="idx login-screen">
+  if (!spaces || !current) return <div className="idx workbench-status">
     <section aria-live="polite">
       <EngineMark />
       <h1>知域 · Domain Grove</h1>
@@ -119,7 +109,7 @@ function ProjectWorkspace({ session, onLogin }: {session: Identity; onLogin: (ur
     </section>
   </div>
 
-  return <Workspace key={current.id} session={session} onLogin={onLogin} space={current}
+  return <Workspace key={current.id} session={session} space={current}
     spaces={spaces} onSelectSpace={select} onSpaceRevoked={revoked} onCreatedSpace={space => {
       setSpaces(existing => [...(existing ?? []).filter(item => item.id !== space.id), space])
       select(space.id)
@@ -128,7 +118,6 @@ function ProjectWorkspace({ session, onLogin }: {session: Identity; onLogin: (ur
 
 type WorkspaceProps = {
   session: Identity
-  onLogin: (url: string) => void
   space: ProjectSpace
   spaces: ProjectSpace[]
   onSelectSpace: (id: string) => void
@@ -136,7 +125,7 @@ type WorkspaceProps = {
   onSpaceRevoked: () => void
 }
 
-function Workspace({ session, onLogin, space, spaces, onSelectSpace, onCreatedSpace, onSpaceRevoked }: WorkspaceProps) {
+function Workspace({ session, space, spaces, onSelectSpace, onCreatedSpace, onSpaceRevoked }: WorkspaceProps) {
   const indexPath = projectIndexPath(space.id)
   const [graph, setGraph] = useState<Graph>()
   const [proposals, setProposals] = useState<Proposal[]>([])
@@ -192,15 +181,14 @@ function Workspace({ session, onLogin, space, spaces, onSelectSpace, onCreatedSp
         setFetchError('')
       } catch (error) {
         if (!active) return
-        if (error instanceof RequestError && error.status === 401 && error.loginURL) onLogin(error.loginURL)
-        else if (error instanceof RequestError && error.status === 404 && space.id !== defaultProject.id) onSpaceRevoked()
+        if (error instanceof RequestError && error.status === 404 && space.id !== defaultProject.id) onSpaceRevoked()
         setFetchError(explain(error))
       }
     }
     void read()
     const timer = window.setInterval(() => { if (!document.hidden) void read() }, 7000)
     return () => { active = false; window.clearInterval(timer) }
-  }, [indexPath, onLogin, onSpaceRevoked, refresh, space.id])
+  }, [indexPath, onSpaceRevoked, refresh, space.id])
 
   useEffect(() => {
     setDetail(undefined)
@@ -361,12 +349,8 @@ function Workspace({ session, onLogin, space, spaces, onSelectSpace, onCreatedSp
       <div className="engine-toolbar">
         <button type="button" className="mobile-chat-toggle secondary-button" onClick={() => setMobileGovernance(value => !value)}
           aria-expanded={mobileGovernance} aria-controls="index-governance-pane">{mobileGovernance ? '收起治理' : '治理 AI'}</button>
-        <span className={session.user_id === 'dev_user' ? 'engine-mode engine-mode--mock' : 'engine-mode'}><i />{session.user_id === 'dev_user' ? '演示模式' : '已连接'}</span>
-        <span className="engine-user" title={'账号 ID ' + session.user_id}>{session.user_id === 'dev_user' ? '本地演示' : session.username}</span>
-        {session.user_id !== 'dev_user' && <button className="quiet-button" onClick={async () => {
-          try { await request('/auth/logout', {}); window.location.reload() }
-          catch (error) { setNotice(explain(error)) }
-        }}>退出</button>}
+        <span className="engine-mode engine-mode--mock"><i />演示模式</span>
+        <span className="engine-user">本地演示</span>
       </div>
     </header>
     <div className="engine-content">
@@ -380,7 +364,7 @@ function Workspace({ session, onLogin, space, spaces, onSelectSpace, onCreatedSp
           <button aria-pressed={pane === 'proposals'} onClick={() => showPane('proposals')}>建模提案 {pending > 0 && <span>{pending}</span>}</button>
         </div>
         {pane==='modeling' && graph && reviewAvailable && <SourceIntake endpoint={indexPath+'/ingest'} onSubmitted={p=>{setPane('proposals');selectProposal(p.id);setRefresh(v=>v+1)}} />}
-        <ModelingPanel active={pane === 'modeling'} endpoint={indexPath + '/modeling'} revision={graph?.revision} draft={draft} onLogin={onLogin}
+        <ModelingPanel active={pane === 'modeling'} endpoint={indexPath + '/modeling'} revision={graph?.revision} draft={draft}
           readOnly={Boolean(graph) && !reviewAvailable}
           onDraft={value => { setDraft(value); if (value) { switchGraph(true); setHideDraftDetails(false); setMobileGovernance(false) } }}
           onSubmitted={result => {
@@ -404,7 +388,7 @@ function Workspace({ session, onLogin, space, spaces, onSelectSpace, onCreatedSp
           <label htmlFor="adjust-instruction">用 AI 调整此提案</label><textarea id="adjust-instruction" value={editAI} rows={2} onChange={e=>setEditAI(e.target.value)} placeholder="描述要移动的节点、连线或规则" maxLength={2600}/>
           <button className="idx-btn" disabled={submitting || !editAI.trim()}>调整草案</button></form>}
         <div className="idx-queue-items">
-          {!reviewAvailable ? <p className="idx-muted">登录已授权账号后可审核提案。</p> :
+          {!reviewAvailable ? <p className="idx-muted">当前工作台以只读模式运行。</p> :
             graph && visible.length === 0 ? <p className="idx-muted">{filter === 'pending' ? '暂无待审核提案。' : '暂无建模提案。'}</p> :
               visible.map(item => <button key={item.id} className="idx-queue-item" aria-pressed={selected === item.id}
                 disabled={submitting} onClick={() => selectProposal(item.id)}>

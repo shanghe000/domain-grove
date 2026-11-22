@@ -3,10 +3,8 @@ package spaceapi
 import (
 	"context"
 	"encoding/json"
-	"encoding/pem"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -41,30 +39,15 @@ func openFixture(t *testing.T) (*index.Store, *spaces.Catalog) {
 	return store, catalog
 }
 
-func identityFixture(t *testing.T) *auth.Provider {
-	t.Helper()
-	verifier := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		subject := strings.TrimPrefix(r.Header.Get("Authorization"), "Bearer fixture-")
-		if subject != "owner" && subject != "reviewer" && subject != "other" {
-			w.WriteHeader(http.StatusUnauthorized)
-			return
+func fixtureIdentities(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		subject, ok := strings.CutPrefix(r.Header.Get("Authorization"), "Bearer fixture-")
+		if ok && (subject == "owner" || subject == "reviewer" || subject == "other") {
+			user := &auth.UserIdentity{UserID: subject, Username: subject}
+			r = r.WithContext(auth.WithIdentity(r.Context(), user))
 		}
-		_ = json.NewEncoder(w).Encode(map[string]any{"active": true, "user_id": subject, "username": subject})
-	}))
-	t.Cleanup(verifier.Close)
-	cert := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: verifier.Certificate().Raw})
-	caPath := filepath.Join(t.TempDir(), "verifier.pem")
-	if err := os.WriteFile(caPath, cert, 0600); err != nil {
-		t.Fatal(err)
-	}
-	provider, err := auth.New(context.Background(), auth.Config{
-		Enabled: true, AuthURL: "https://login.example.test", VerifyTokenURL: verifier.URL,
-		AppID: "space-api-fixture", TLSCAFile: caPath,
+		next.ServeHTTP(w, r)
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	return provider
 }
 
 func response(t *testing.T, handler http.Handler, method, path, token, payload string, want int) *httptest.ResponseRecorder {
@@ -98,9 +81,8 @@ func TestProjectHTTPMembershipAndScopedIndex(t *testing.T) {
 			{ID: "alpha_metric", Kind: index.KindMetric, ParentID: "domain_alpha", Label: "策划组指标"},
 		}}}, nil
 	})
-	New(catalog, false, planner, "", nil).Register(mux)
-	provider := identityFixture(t)
-	app := provider.Middleware(mux)
+	New(catalog, false, planner, "").Register(mux)
+	app := fixtureIdentities(mux)
 	const owner, reviewer, other = "fixture-owner", "fixture-reviewer", "fixture-other"
 
 	response(t, mux, http.MethodGet, spacesPath, "", "", http.StatusUnauthorized)
@@ -205,14 +187,10 @@ func TestSyntheticIdentityRequiresExplicitPermissionForProjects(t *testing.T) {
 	if _, err := catalog.Create(context.Background(), "dev_user", "old-test", "原测试"); err != nil {
 		t.Fatal(err)
 	}
-	local, err := auth.New(context.Background(), auth.Config{})
-	if err != nil {
-		t.Fatal(err)
-	}
 	for _, allow := range []bool{false, true} {
 		mux := http.NewServeMux()
-		New(catalog, allow, nil, "", nil).Register(mux)
-		app := local.Middleware(mux)
+		New(catalog, allow, nil, "").Register(mux)
+		app := auth.LocalIdentity(mux)
 		data := response(t, app, http.MethodGet, spacesPath, "", "", http.StatusOK)
 		if strings.Contains(data.Body.String(), "old-test") != allow {
 			t.Fatal("named project metadata not gated for dev identity")

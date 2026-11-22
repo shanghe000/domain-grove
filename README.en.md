@@ -49,7 +49,7 @@ Requires **Go 1.25+**, **Node.js 22.12+**, and **Python 3**. The workbench inter
    npm run build --prefix web
 
    sample_data="$(mktemp -d)"
-   AUTH_ENABLED=false ONTOLOGY_MODE=index INDEX_ALLOW_DEV_REVIEW=true \
+   ONTOLOGY_MODE=index INDEX_ALLOW_DEV_REVIEW=true \
      GO_SERVER_ADDR=127.0.0.1:8080 PUBLIC_URL=http://127.0.0.1:8080 \
      DATA_DIR="$sample_data" go run ./cmd/server
    ```
@@ -74,7 +74,7 @@ If a return visit starts requiring a completed reading session, keep the metric 
 
 ## Data and deployment
 
-SQLite stores graphs, proposals, and published revisions. Graphs locate evidence by repository alias, relative path, and anchor, while source material stays in its original location. The local example binds to loopback and writes synthetic data to a separate temporary directory. Shared deployments configure their own authentication, model service, and MCP credentials. [Configuration reference (Chinese)](docs/CONFIGURATION.md)
+SQLite stores graphs, proposals, and published revisions. Graphs locate evidence by repository alias, relative path, and anchor, while source material stays in its original location. The workbench binds to loopback. The example uses a separate temporary directory, and MCP uses separate credentials for reading and submission. [Configuration reference (Chinese)](docs/CONFIGURATION.md)
 
 ## Architecture
 

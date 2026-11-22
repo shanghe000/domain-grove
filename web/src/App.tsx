@@ -23,16 +23,6 @@ function stagedGraph(graph: Graph, patch?: DraftPatch): Graph {
   }
 }
 
-function validLoginURL(value?: string) {
-  if (!value) return ''
-  try {
-    const url = new URL(value, window.location.href)
-    return url.protocol === 'https:' || (url.origin === window.location.origin && value.startsWith('/')) ? url.href : ''
-  } catch {
-    return ''
-  }
-}
-
 export function EngineMark() {
   return <span className="engine-mark" aria-hidden="true"><i /><i /><i /></span>
 }
@@ -49,7 +39,7 @@ interface DraftUpdate {
 
 export function App() {
   const [state, setState] = useState<WorkbenchState>()
-  const [failed, setFailed] = useState<{ message: string; login: string }>()
+  const [failed, setFailed] = useState<string>()
   const [domainId, setDomainId] = useState('')
   const [selectedId, setSelectedId] = useState('')
   const [messages, setMessages] = useState<ChatMessage[]>([])
@@ -73,16 +63,16 @@ export function App() {
       setState(value)
       setFailed(undefined)
     } catch (error) {
-      setFailed({ message: explain(error), login: error instanceof RequestError ? validLoginURL(error.loginURL) : '' })
+      setFailed(explain(error))
       if (error instanceof RequestError && [401, 403].includes(error.status)) setState(undefined)
     }
   }, [])
 
   useEffect(() => { void load() }, [load])
 
-  const signedIn = Boolean(state)
+  const workbenchReady = Boolean(state)
   useEffect(() => {
-    if (!signedIn) return
+    if (!workbenchReady) return
     const live = new EventSource('/api/v1/events/stream')
     let connected = false
     live.onopen = () => {
@@ -118,7 +108,7 @@ export function App() {
       live.close()
       window.clearTimeout(inactivityTimer)
     }
-  }, [signedIn, load, changeDomain])
+  }, [workbenchReady, load, changeDomain])
 
   useEffect(() => {
     if (confirmDiscard && !discardDialog.current?.open) discardDialog.current?.showModal()
@@ -225,20 +215,13 @@ export function App() {
     }
   }
 
-  const logout = async () => {
-    const result = await fetch('/auth/logout', {method: 'POST'})
-    if (result.ok) window.location.reload()
-    else setNotice({text: '退出失败，请稍后重试。', error: true})
-  }
-
   if (!state || !merged) {
-    return <main className="login-screen">
+    return <main className="workbench-status">
       <section aria-live="polite">
         <EngineMark />
         <h1>知域 · Domain Grove</h1>
-        <p>{failed?.message ?? '正在读取工作台…'}</p>
-        {failed?.login ? <a className="primary-button" href={failed.login}>登录</a>
-          : failed && <button className="secondary-button" onClick={() => void load()}>重新加载</button>}
+        <p>{failed ?? '正在读取工作台…'}</p>
+        {failed && <button className="secondary-button" onClick={() => void load()}>重新加载</button>}
       </section>
     </main>
   }
@@ -255,8 +238,7 @@ export function App() {
         <span className={state.mock ? 'engine-mode engine-mode--mock' : 'engine-mode'}>
           <i aria-hidden="true" />{state.mock ? '演示模式' : '已连接'}
         </span>
-        <span className="engine-user">{state.user.user_id === 'dev_user' ? '本地演示' : state.user.username}</span>
-        {state.user.user_id !== 'dev_user' && <button className="quiet-button" type="button" onClick={() => void logout()}>退出</button>}
+        <span className="engine-user">本地演示</span>
       </div>
     </header>
 

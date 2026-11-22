@@ -34,7 +34,6 @@ type settings struct {
 	mode, indexPath, submitToken       string
 	submitterID                        string
 	mock, allowDevReview               bool
-	identity                           auth.Config
 }
 
 func main() {
@@ -62,39 +61,38 @@ func loadSettings() (settings, error) {
 		mode: defaultEnv("ONTOLOGY_MODE", "index"), submitToken: os.Getenv("MCP_SUBMIT_TOKEN"),
 		submitterID:    defaultEnv("MCP_SUBMITTER_ID", "bi-agent"),
 		allowDevReview: strings.EqualFold(os.Getenv("INDEX_ALLOW_DEV_REVIEW"), "true"),
-		mock:           strings.EqualFold(strings.TrimSpace(os.Getenv("MOCK_EXTERNAL_APIS")), "true"), identity: auth.ConfigFromEnv(),
+		mock:           strings.EqualFold(strings.TrimSpace(os.Getenv("MOCK_EXTERNAL_APIS")), "true"),
 	}
 	c.sqlitePath = defaultEnv("SQLITE_PATH", filepath.Join(c.dataDir, "ontology.db"))
 	c.indexPath = defaultEnv("INDEX_DB_PATH", filepath.Join(c.dataDir, "index.db"))
 	if c.mode != "index" && c.mode != "legacy" {
 		return c, errors.New("ONTOLOGY_MODE must be index or legacy")
 	}
-	host, _, err := net.SplitHostPort(c.addr)
+	// Reject a deployment that explicitly expected external authentication.
+	if value := strings.TrimSpace(os.Getenv("AUTH_ENABLED")); value != "" && !strings.EqualFold(value, "false") {
+		return c, errors.New("the workbench only supports local access")
+	}
+	host, port, err := net.SplitHostPort(c.addr)
 	if err != nil {
 		return c, errors.New("GO_SERVER_ADDR must be a host:port address")
 	}
-	localPublish := strings.EqualFold(os.Getenv("ALLOW_INSECURE_DEV"), "true") && loopback(os.Getenv("DEV_PUBLISH_HOST"))
-	if !c.identity.Enabled && !loopback(host) && !localPublish {
-		return c, errors.New("without configured authentication, GO_SERVER_ADDR must bind to loopback")
+	if !loopback(host) {
+		return c, errors.New("GO_SERVER_ADDR must bind to loopback")
 	}
-	if c.allowDevReview && (c.identity.Enabled || !loopback(host)) {
-		return c, errors.New("INDEX_ALLOW_DEV_REVIEW requires a loopback listener without external authentication")
+	if strings.EqualFold(host, "localhost") {
+		c.addr = net.JoinHostPort("127.0.0.1", port)
 	}
 	if (c.certFile == "") != (c.keyFile == "") {
 		return c, errors.New("configure GO_TLS_CERT_FILE and GO_TLS_KEY_FILE together")
 	}
 	public := strings.TrimSpace(os.Getenv("PUBLIC_URL"))
-	publicExplicit := public != ""
 	if public != "" {
 		u, err := url.Parse(public)
-		if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Hostname() == "" ||
-			u.User != nil || u.RawQuery != "" || u.Fragment != "" || (publicExplicit && u.Path != "" && u.Path != "/") {
-			return c, errors.New("PUBLIC_URL must contain only the HTTP(S) origin")
+		if err != nil || (u.Scheme != "http" && u.Scheme != "https") || !loopback(u.Hostname()) ||
+			u.User != nil || u.ForceQuery || u.RawQuery != "" || u.Fragment != "" || (u.Path != "" && u.Path != "/") {
+			return c, errors.New("PUBLIC_URL must contain only a loopback HTTP(S) origin")
 		}
 		c.origin = u.Scheme + "://" + u.Host
-	}
-	if c.identity.Enabled && !strings.HasPrefix(c.origin, "https://") {
-		return c, errors.New("external authentication requires an HTTPS PUBLIC_URL")
 	}
 	if c.mode == "index" {
 		return c, nil
@@ -124,16 +122,12 @@ func run(ctx context.Context) error {
 	}
 	startup, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
-	provider, err := auth.New(startup, c.identity)
-	if err != nil {
-		return err
-	}
 	operate, consume, health, closePlane, err := configurePlane(startup, c)
 	if err != nil {
 		return err
 	}
 	defer closePlane()
-	routes := newRoutes(provider, operate, consume, staticWeb(os.DirFS(c.distDir)), health, c.mode == "index")
+	routes := newRoutes(operate, consume, staticWeb(os.DirFS(c.distDir)), health, c.mode == "index")
 
 	server := &http.Server{
 		Addr: c.addr, Handler: browserHeaders(c.origin, routes),
@@ -189,7 +183,7 @@ func configurePlane(ctx context.Context, c settings) (*http.ServeMux, http.Handl
 			store.Close()
 			return nil, nil, nil, nil, fmt.Errorf("open project spaces: %w", err)
 		}
-		projects := spaceapi.New(catalog, c.allowDevReview, modeling, c.submitterID, nil)
+		projects := spaceapi.New(catalog, c.allowDevReview, modeling, c.submitterID)
 		projects.Register(operate)
 		consume, err = projects.NamedMCP(consume)
 		if err != nil {
@@ -239,10 +233,9 @@ func configurePlane(ctx context.Context, c settings) (*http.ServeMux, http.Handl
 	return operate, consume, health, func() { store.Close() }, nil
 }
 
-func newRoutes(provider *auth.Provider, operate, consume, web http.Handler, health http.HandlerFunc, namedMCP bool) *http.ServeMux {
+func newRoutes(operate, consume, web http.Handler, health http.HandlerFunc, namedMCP bool) *http.ServeMux {
 	mux := http.NewServeMux()
-	provider.Register(mux)
-	mux.Handle("/api/v1/", provider.Middleware(operate))
+	mux.Handle("/api/v1/", auth.LocalIdentity(operate))
 	mux.Handle("/mcp", consume)
 	mux.Handle("/mcp/sse", consume)
 	if namedMCP {
@@ -290,6 +283,14 @@ func browserHeaders(origin string, next http.Handler) http.Handler {
 		w.Header().Set("X-Content-Type-Options", "nosniff")
 		w.Header().Set("X-Frame-Options", "DENY")
 		w.Header().Set("Content-Security-Policy", "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'self'")
+		host := r.Host
+		if name, _, err := net.SplitHostPort(host); err == nil {
+			host = name
+		}
+		if !loopback(strings.Trim(host, "[]")) {
+			http.Error(w, "工作台仅接受本机访问", http.StatusForbidden)
+			return
+		}
 		if isBrowserMutation(r) {
 			allowed := origin
 			if allowed == "" {
@@ -312,7 +313,7 @@ func browserHeaders(origin string, next http.Handler) http.Handler {
 }
 
 func isBrowserMutation(r *http.Request) bool {
-	if !strings.HasPrefix(r.URL.Path, "/api/v1/") && r.URL.Path != "/auth/logout" {
+	if !strings.HasPrefix(r.URL.Path, "/api/v1/") {
 		return false
 	}
 	return r.Method != http.MethodGet && r.Method != http.MethodHead && r.Method != http.MethodOptions
