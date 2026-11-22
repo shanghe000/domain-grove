@@ -1,0 +1,33 @@
+schema_version: 2
+revision: 1
+nodes:
+  - id: domain.analysis
+    kind: domain
+    label: 数据分析域
+  - id: metric.login_dau
+    kind: metric
+    label: 登录 DAU
+    parent_id: domain.analysis
+    properties:
+      cognitive_layer: S3
+      dimensions: [渠道, 区服]
+    axioms:
+      - kind: pitfall
+        text: 计算前向负责人确认统计日的时区。
+  - id: artifact.event_dictionary
+    kind: artifact
+    label: 登录事件字典
+    parent_id: domain.analysis
+    properties:
+      artifact_type: event_spec
+      cognitive_layer: S0
+    ref:
+      repository: example-bi
+      path: tracking/events.csv
+      read_strategy: 按事件名筛选
+edges:
+  - id: edge.login_dau.event
+    from: metric.login_dau
+    to: artifact.event_dictionary
+    relation: depends_on
+    anchor: event_name=user_auth

@@ -1,0 +1,11 @@
+**
+!Dockerfile
+!bin/
+!bin/ontology-engine
+!web/
+!web/dist/
+!web/dist/**
+!workers/
+!workers/extractor/
+!workers/extractor/*.py
+!workers/extractor/index-requirements.txt

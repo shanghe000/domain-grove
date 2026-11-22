@@ -1,0 +1,30 @@
+{
+  "request_id": "community-example-v1",
+  "title": "示例社区的阅读留存",
+  "rationale": "记录次日回访率的定义、业务影响和资料定位。",
+  "base_revision": 0,
+  "patch": {
+    "schema_version": 2,
+    "upsert_nodes": [
+      {"id": "domain.reading", "kind": "domain", "label": "阅读与留存"},
+      {"id": "domain.events", "kind": "domain", "label": "社区事件"},
+      {"id": "metric.return_rate", "kind": "metric", "label": "次日回访率", "parent_id": "domain.reading", "description": "首日阅读用户中，次日再次阅读的比例。", "properties": {"cognitive_layer": "S3"}, "axioms": [{"kind": "pitfall", "text": "以同一时区切分首日和次日，并使用同一去重规则。"}]},
+      {"id": "metric.reading_users", "kind": "metric", "label": "日阅读人数", "parent_id": "domain.reading", "properties": {"cognitive_layer": "S3"}},
+      {"id": "concept.onboarding", "kind": "concept", "label": "入门阅读引导", "parent_id": "domain.reading", "properties": {"cognitive_layer": "S2"}},
+      {"id": "concept.reading_session", "kind": "concept", "label": "阅读会话", "parent_id": "domain.events", "properties": {"cognitive_layer": "S1"}},
+      {"id": "artifact.retention_definition", "kind": "artifact", "label": "留存指标规范", "parent_id": "metric.return_rate", "properties": {"artifact_type": "document", "cognitive_layer": "S0"}, "ref": {"repository": "sample-community", "path": "sources/retention.md"}},
+      {"id": "artifact.reading_events", "kind": "artifact", "label": "阅读事件字典", "parent_id": "domain.events", "properties": {"artifact_type": "event_spec", "cognitive_layer": "S0"}, "ref": {"repository": "sample-community", "path": "sources/reading-events.md"}},
+      {"id": "artifact.onboarding_guide", "kind": "artifact", "label": "阅读引导说明", "parent_id": "concept.onboarding", "properties": {"artifact_type": "document", "cognitive_layer": "S0"}, "ref": {"repository": "sample-community", "path": "sources/onboarding.md"}}
+    ],
+    "upsert_edges": [
+      {"id": "edge.return_definition", "from": "metric.return_rate", "to": "artifact.retention_definition", "relation": "depends_on", "anchor": "次日回访率"},
+      {"id": "edge.return_event", "from": "metric.return_rate", "to": "artifact.reading_events", "relation": "depends_on", "anchor": "阅读事件"},
+      {"id": "edge.return_dau", "from": "metric.return_rate", "to": "metric.reading_users", "relation": "depends_on"},
+      {"id": "edge.return_onboarding", "from": "metric.return_rate", "to": "concept.onboarding", "relation": "impacted_by"},
+      {"id": "edge.users_dictionary", "from": "metric.reading_users", "to": "artifact.reading_events", "relation": "depends_on", "anchor": "读者标识"},
+      {"id": "edge.onboarding_guide", "from": "concept.onboarding", "to": "artifact.onboarding_guide", "relation": "defined_in", "anchor": "入门路径"},
+      {"id": "edge.session_dictionary", "from": "concept.reading_session", "to": "artifact.reading_events", "relation": "defined_in", "anchor": "会话边界"},
+      {"id": "edge.onboarding_session", "from": "concept.onboarding", "to": "concept.reading_session", "relation": "collaborates_with"}
+    ]
+  }
+}

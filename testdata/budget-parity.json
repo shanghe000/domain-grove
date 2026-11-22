@@ -1,0 +1,438 @@
+{
+  "graph": {
+    "nodes": [
+      {
+        "id": "Metric_Retention",
+        "domain_id": "",
+        "node_type": "Metric",
+        "label": "留存率",
+        "status": "active",
+        "properties": {},
+        "axioms": []
+      },
+      {
+        "id": "Concept_EarlyPath",
+        "domain_id": "",
+        "node_type": "Concept",
+        "label": "早期路径",
+        "status": "active",
+        "properties": {},
+        "axioms": []
+      },
+      {
+        "id": "Concept_LaterPath",
+        "domain_id": "",
+        "node_type": "Concept",
+        "label": "较长路径",
+        "status": "active",
+        "properties": {},
+        "axioms": []
+      },
+      {
+        "id": "Concept_Activity",
+        "domain_id": "",
+        "node_type": "Concept",
+        "label": "运营活动",
+        "status": "active",
+        "properties": {},
+        "axioms": []
+      },
+      {
+        "id": "Concept_RewardGroup",
+        "domain_id": "",
+        "node_type": "Concept",
+        "label": "奖励组",
+        "status": "active",
+        "properties": {},
+        "axioms": []
+      },
+      {
+        "id": "Concept_Mail",
+        "domain_id": "",
+        "node_type": "Concept",
+        "label": "邮件发奖",
+        "status": "active",
+        "properties": {},
+        "axioms": []
+      },
+      {
+        "id": "Concept_Deprecated",
+        "domain_id": "",
+        "node_type": "Concept",
+        "label": "历史运营",
+        "status": "deprecated",
+        "properties": {},
+        "axioms": []
+      },
+      {
+        "id": "Concept_LegacyRules",
+        "domain_id": "",
+        "node_type": "Concept",
+        "label": "历史规则",
+        "status": "active",
+        "properties": {},
+        "axioms": []
+      },
+      {
+        "id": "Concept_Handbook",
+        "domain_id": "",
+        "node_type": "Concept",
+        "label": "指标手册",
+        "status": "active",
+        "properties": {},
+        "axioms": []
+      },
+      {
+        "id": "Concept_Unrelated",
+        "domain_id": "",
+        "node_type": "Concept",
+        "label": "只通过入边相连",
+        "status": "active",
+        "properties": {},
+        "axioms": []
+      },
+      {
+        "id": "Concept_SecondInbound",
+        "domain_id": "",
+        "node_type": "Concept",
+        "label": "二跳入边",
+        "status": "active",
+        "properties": {},
+        "axioms": []
+      },
+      {
+        "id": "Artifact_Retention",
+        "domain_id": "",
+        "node_type": "Artifact",
+        "label": "留存策划案",
+        "status": "active",
+        "properties": {},
+        "axioms": []
+      }
+    ],
+    "edges": [
+      {
+        "src_id": "Metric_Retention",
+        "dst_id": "Concept_EarlyPath",
+        "predicate": "depends_on",
+        "label_zh": "depends_on",
+        "cost": 0.5,
+        "metadata": {}
+      },
+      {
+        "src_id": "Metric_Retention",
+        "dst_id": "Concept_LaterPath",
+        "predicate": "impacted_by",
+        "label_zh": "impacted_by",
+        "cost": 1.0,
+        "metadata": {}
+      },
+      {
+        "src_id": "Concept_EarlyPath",
+        "dst_id": "Concept_Activity",
+        "predicate": "depends_on",
+        "label_zh": "depends_on",
+        "cost": 0.5,
+        "metadata": {}
+      },
+      {
+        "src_id": "Concept_LaterPath",
+        "dst_id": "Concept_Activity",
+        "predicate": "impacted_by",
+        "label_zh": "impacted_by",
+        "cost": 1.0,
+        "metadata": {}
+      },
+      {
+        "src_id": "Concept_Activity",
+        "dst_id": "Concept_RewardGroup",
+        "predicate": "impacted_by",
+        "label_zh": "impacted_by",
+        "cost": 1.0,
+        "metadata": {}
+      },
+      {
+        "src_id": "Concept_RewardGroup",
+        "dst_id": "Concept_Mail",
+        "predicate": "impacted_by",
+        "label_zh": "impacted_by",
+        "cost": 1.0,
+        "metadata": {}
+      },
+      {
+        "src_id": "Concept_RewardGroup",
+        "dst_id": "Concept_Mail",
+        "predicate": "foreign_key_to",
+        "label_zh": "foreign_key_to",
+        "cost": 0.5,
+        "metadata": {}
+      },
+      {
+        "src_id": "Concept_RewardGroup",
+        "dst_id": "Concept_Activity",
+        "predicate": "configured_by",
+        "label_zh": "configured_by",
+        "cost": 0.5,
+        "metadata": {}
+      },
+      {
+        "src_id": "Concept_Activity",
+        "dst_id": "Concept_Deprecated",
+        "predicate": "defined_in",
+        "label_zh": "defined_in",
+        "cost": 0.5,
+        "metadata": {}
+      },
+      {
+        "src_id": "Concept_Deprecated",
+        "dst_id": "Concept_LegacyRules",
+        "predicate": "defined_in",
+        "label_zh": "defined_in",
+        "cost": 0.5,
+        "metadata": {}
+      },
+      {
+        "src_id": "Concept_Handbook",
+        "dst_id": "Metric_Retention",
+        "predicate": "depends_on",
+        "label_zh": "depends_on",
+        "cost": 0.5,
+        "metadata": {}
+      },
+      {
+        "src_id": "Concept_Handbook",
+        "dst_id": "Concept_Unrelated",
+        "predicate": "depends_on",
+        "label_zh": "depends_on",
+        "cost": 0.5,
+        "metadata": {}
+      },
+      {
+        "src_id": "Concept_SecondInbound",
+        "dst_id": "Concept_Handbook",
+        "predicate": "defined_in",
+        "label_zh": "defined_in",
+        "cost": 0.5,
+        "metadata": {}
+      },
+      {
+        "src_id": "Metric_Retention",
+        "dst_id": "Artifact_Retention",
+        "predicate": "defined_in",
+        "label_zh": "defined_in",
+        "cost": 0.5,
+        "metadata": {}
+      },
+      {
+        "src_id": "Concept_Mail",
+        "dst_id": "Concept_Unrelated",
+        "predicate": "depends_on",
+        "label_zh": "depends_on",
+        "cost": 0.5,
+        "metadata": {}
+      }
+    ],
+    "artifacts": [
+      {
+        "node_id": "Artifact_Retention",
+        "artifact_type": "feishu_md",
+        "read_mode": "full_text",
+        "physical_ref": "docs/Artifact_Retention.md",
+        "source_url": "",
+        "schema_meta": {}
+      }
+    ]
+  },
+  "cases": [
+    {
+      "name": "bounded retention context",
+      "node_id": "Metric_Retention",
+      "budget": 2.5,
+      "include_deprecated": false,
+      "expected": {
+        "nodes": [
+          "Artifact_Retention",
+          "Concept_Activity",
+          "Concept_EarlyPath",
+          "Concept_Handbook",
+          "Concept_LaterPath",
+          "Concept_Mail",
+          "Concept_RewardGroup",
+          "Metric_Retention"
+        ],
+        "edges": [
+          {
+            "src_id": "Concept_Activity",
+            "dst_id": "Concept_RewardGroup",
+            "predicate": "impacted_by"
+          },
+          {
+            "src_id": "Concept_EarlyPath",
+            "dst_id": "Concept_Activity",
+            "predicate": "depends_on"
+          },
+          {
+            "src_id": "Concept_Handbook",
+            "dst_id": "Metric_Retention",
+            "predicate": "depends_on"
+          },
+          {
+            "src_id": "Concept_LaterPath",
+            "dst_id": "Concept_Activity",
+            "predicate": "impacted_by"
+          },
+          {
+            "src_id": "Concept_RewardGroup",
+            "dst_id": "Concept_Activity",
+            "predicate": "configured_by"
+          },
+          {
+            "src_id": "Concept_RewardGroup",
+            "dst_id": "Concept_Mail",
+            "predicate": "foreign_key_to"
+          },
+          {
+            "src_id": "Metric_Retention",
+            "dst_id": "Artifact_Retention",
+            "predicate": "defined_in"
+          },
+          {
+            "src_id": "Metric_Retention",
+            "dst_id": "Concept_EarlyPath",
+            "predicate": "depends_on"
+          },
+          {
+            "src_id": "Metric_Retention",
+            "dst_id": "Concept_LaterPath",
+            "predicate": "impacted_by"
+          }
+        ],
+        "frontier_nodes": [
+          {
+            "node_id": "Concept_Unrelated",
+            "label": "只通过入边相连",
+            "via_edge": "depends_on",
+            "from_node": "Concept_Mail"
+          }
+        ]
+      }
+    },
+    {
+      "name": "explicitly include deprecated",
+      "node_id": "Metric_Retention",
+      "budget": 2.5,
+      "include_deprecated": true,
+      "expected": {
+        "nodes": [
+          "Artifact_Retention",
+          "Concept_Activity",
+          "Concept_Deprecated",
+          "Concept_EarlyPath",
+          "Concept_Handbook",
+          "Concept_LaterPath",
+          "Concept_LegacyRules",
+          "Concept_Mail",
+          "Concept_RewardGroup",
+          "Metric_Retention"
+        ],
+        "edges": [
+          {
+            "src_id": "Concept_Activity",
+            "dst_id": "Concept_Deprecated",
+            "predicate": "defined_in"
+          },
+          {
+            "src_id": "Concept_Activity",
+            "dst_id": "Concept_RewardGroup",
+            "predicate": "impacted_by"
+          },
+          {
+            "src_id": "Concept_Deprecated",
+            "dst_id": "Concept_LegacyRules",
+            "predicate": "defined_in"
+          },
+          {
+            "src_id": "Concept_EarlyPath",
+            "dst_id": "Concept_Activity",
+            "predicate": "depends_on"
+          },
+          {
+            "src_id": "Concept_Handbook",
+            "dst_id": "Metric_Retention",
+            "predicate": "depends_on"
+          },
+          {
+            "src_id": "Concept_LaterPath",
+            "dst_id": "Concept_Activity",
+            "predicate": "impacted_by"
+          },
+          {
+            "src_id": "Concept_RewardGroup",
+            "dst_id": "Concept_Activity",
+            "predicate": "configured_by"
+          },
+          {
+            "src_id": "Concept_RewardGroup",
+            "dst_id": "Concept_Mail",
+            "predicate": "foreign_key_to"
+          },
+          {
+            "src_id": "Metric_Retention",
+            "dst_id": "Artifact_Retention",
+            "predicate": "defined_in"
+          },
+          {
+            "src_id": "Metric_Retention",
+            "dst_id": "Concept_EarlyPath",
+            "predicate": "depends_on"
+          },
+          {
+            "src_id": "Metric_Retention",
+            "dst_id": "Concept_LaterPath",
+            "predicate": "impacted_by"
+          }
+        ],
+        "frontier_nodes": [
+          {
+            "node_id": "Concept_Unrelated",
+            "label": "只通过入边相连",
+            "via_edge": "depends_on",
+            "from_node": "Concept_Mail"
+          }
+        ]
+      }
+    },
+    {
+      "name": "zero budget has forward frontier but no inbound neighbor",
+      "node_id": "Metric_Retention",
+      "budget": 0,
+      "include_deprecated": false,
+      "expected": {
+        "nodes": [
+          "Metric_Retention"
+        ],
+        "edges": [],
+        "frontier_nodes": [
+          {
+            "node_id": "Artifact_Retention",
+            "label": "留存策划案",
+            "via_edge": "defined_in",
+            "from_node": "Metric_Retention"
+          },
+          {
+            "node_id": "Concept_EarlyPath",
+            "label": "早期路径",
+            "via_edge": "depends_on",
+            "from_node": "Metric_Retention"
+          },
+          {
+            "node_id": "Concept_LaterPath",
+            "label": "较长路径",
+            "via_edge": "impacted_by",
+            "from_node": "Metric_Retention"
+          }
+        ]
+      }
+    }
+  ]
+}
